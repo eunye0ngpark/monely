@@ -353,3 +353,42 @@ tr.sub-active td { background: var(--accent-soft) !important; font-weight: 700; 
   .pair-half + .pair-half { border-left: none; border-top: 1px solid var(--line); }
   .quick-ranges .chip-btn { padding: 6px 10px; font-size: 0.76rem; }
 }
+
+/* ============================================================
+   手机端体验优化(App 化)
+   ============================================================ */
+@media (max-width: 760px) {
+  /* 顶栏: 品牌与操作区分离, 按钮更紧凑 */
+  .topbar { flex-direction: column; gap: 12px; }
+  .topbar-actions { width: 100%; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .topbar-actions .btn { padding: 9px 6px; font-size: 0.78rem; text-align: center; }
+  /* 快捷范围: 横向滑动, 不再堆叠成两行 */
+  .quick-ranges {
+    flex-wrap: nowrap; overflow-x: auto; max-width: 100%;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .quick-ranges::-webkit-scrollbar { display: none; }
+  .quick-ranges .chip-btn { flex: none; }
+  /* 筛选行控件: 类型 chips 与开关允许横向滑动 */
+  .type-filter { flex-wrap: nowrap; overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch; }
+  .type-filter::-webkit-scrollbar, .quick-ranges::-webkit-scrollbar { display: none; }
+  .type-chip { flex: none; }
+  /* 表格容器触控滚动 */
+  .table-wrap { -webkit-overflow-scrolling: touch; }
+  /* 交易明细表: 移动端隐藏低优先级列(账户/支付方式/标签), 详情仍可在弹窗查看 */
+  #txTable th:nth-child(6), #txTable td:nth-child(6),
+  #txTable th:nth-child(7), #txTable td:nth-child(7),
+  #txTable th:nth-child(8), #txTable td:nth-child(8) { display: none; }
+  /* 星图工具栏更紧凑 */
+  .star-toolbar { gap: 10px; }
+  .star-toolbar .legend { font-size: 0.72rem; gap: 8px; }
+  /* 弹窗适应小屏 */
+  .modal { padding: 20px 18px; border-radius: 16px; max-height: 88vh; }
+  .detail-grid { gap: 6px 12px; font-size: 0.82rem; }
+  /* 下钻面板内边距 */
+  .drill-panel .table-wrap { margin: 0 -6px; }
+  /* 分页按钮加大触控面积 */
+  .pagination button { padding: 8px 15px; }
+  /* 空状态收缩 */
+  .empty-state { margin: 32px 16px; padding: 36px 20px; }
+}

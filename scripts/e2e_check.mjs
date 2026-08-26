@@ -294,6 +294,19 @@ async function main() {
     check("重置子类过滤恢复全分类列表", subReset);
     await evaljs(`document.getElementById('drillClose').click()`);
 
+    console.log("== 15. PWA(manifest / Service Worker / 图标) ==");
+    await send("Page.navigate", { url: BASE });
+    await sleep(3500);
+    const pwa = await evaljs(`(async () => ({
+      manifest: !!document.querySelector('link[rel="manifest"]'),
+      theme: document.querySelector('meta[name="theme-color"]')?.content,
+      swRegs: (await navigator.serviceWorker.getRegistrations()).length,
+      swActive: !!(await navigator.serviceWorker.ready.then(r => r.active).catch(() => null)) }))()`);
+    check("manifest 链接与 theme-color 存在", pwa.manifest && pwa.theme === "#6675D9", JSON.stringify(pwa));
+    check("Service Worker 注册并激活", pwa.swRegs >= 1 && pwa.swActive, JSON.stringify(pwa));
+    const iconRes = await send("Runtime.evaluate", { expression: `fetch('icon-512.png').then(r => r.status)`, returnByValue: true, awaitPromise: true });
+    check("PWA 图标 icon-512.png 可访问", iconRes.result.value === 200, String(iconRes.result.value));
+
     console.log(`\n结果: ${passed} PASS, ${failed} FAIL`);
     process.exitCode = failed ? 1 : 0;
   } finally {
