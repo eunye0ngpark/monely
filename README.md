@@ -5,6 +5,10 @@
 - 功能完全一致: 财务总览 / 分类分析(含子品类下钻) / 时间趋势 / 星辰分布图 / 交易明细(可编辑) / 数据质量 / 筛选联动 / 导入导出
 - 数据完全不同: **虚构示例数据**, 由 `scripts/generate_sample.py` 确定性生成(seed 固定, 可复现)
 
+线上版本: https://monely-cyan.vercel.app
+代码仓库(私有): https://github.com/eunye0ngpark/monely
+已打通自动部署: push 到 main → Vercel 自动重新发布。
+
 ## 运行
 
 ```bash
