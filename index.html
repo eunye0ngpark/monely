@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>monely. · 个人收支分析</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg?v=2">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=2">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<!-- ============ 顶栏 ============ -->
+<header class="topbar">
+  <div class="brand">
+    <span class="logo-mark" aria-hidden="true">
+      <svg viewBox="0 0 64 64" width="42" height="42"><rect x="2" y="2" width="60" height="60" rx="19" fill="#6675D9"/><path d="M14 44 V29 a8 8 0 0 1 16 0 V44 M30 44 V29 a8 8 0 0 1 16 0 V44" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="51" cy="41" r="4.6" fill="#F2B04C"/></svg>
+    </span>
+    <div>
+      <h1>monely<span class="brand-dot">.</span> <span>个人收支分析</span></h1>
+      <p class="brand-sub" id="datasetInfo">数据来源加载中…</p>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn" id="btnImport" title="导入 MoneyThings CSV 或本工具 JSON">⬆ 导入数据</button>
+    <input type="file" id="fileInput" accept=".csv,.json" hidden>
+    <button class="btn" id="btnExport" title="导出当前筛选结果为 CSV">⬇ 导出筛选结果</button>
+    <button class="btn btn-ghost" id="btnConfig" title="货币 / 日期格式 / 时区设置">⚙ 设置</button>
+  </div>
+</header>
+
+<!-- ============ 筛选栏 ============ -->
+<section class="filterbar" id="filterbar" aria-label="筛选条件">
+  <div class="filter-row">
+    <span class="row-label">时间</span>
+    <div class="quick-ranges" role="group" aria-label="快捷时间范围">
+      <button class="chip-btn" data-range="month">本月</button>
+      <button class="chip-btn" data-range="lastMonth">上月</button>
+      <button class="chip-btn" data-range="3m">近 3 个月</button>
+      <button class="chip-btn" data-range="6m">近 6 个月</button>
+      <button class="chip-btn" data-range="year">今年</button>
+      <button class="chip-btn" data-range="all">全部</button>
+    </div>
+    <div class="date-range">
+      <label>开始 <input type="date" id="dateStart"></label>
+      <label>结束 <input type="date" id="dateEnd"></label>
+      <label>粒度
+        <select id="granularity">
+          <option value="day">按日</option>
+          <option value="week">按周</option>
+          <option value="month" selected>按月</option>
+          <option value="quarter">按季度</option>
+          <option value="year">按年</option>
+        </select>
+      </label>
+    </div>
+  </div>
+  <div class="filter-row">
+    <span class="row-label">筛选</span>
+    <div class="type-filter" id="typeFilter" role="group" aria-label="交易类型">
+      <button class="type-chip" data-type="expense"><span class="ticon exp">↓</span> 支出</button>
+      <button class="type-chip" data-type="income"><span class="ticon inc">↑</span> 收入</button>
+      <button class="type-chip" data-type="refund"><span class="ticon ref">↩</span> 退款</button>
+      <button class="type-chip" data-type="transfer"><span class="ticon tra">⇄</span> 转账</button>
+    </div>
+    <label class="select-label">分类 <select id="fCategory" multiple size="1"></select></label>
+    <label class="select-label">账户 <select id="fAccount" multiple size="1"></select></label>
+    <label class="select-label">支付方式 <select id="fPayment" multiple size="1"></select></label>
+    <label class="pill-toggle"><input type="checkbox" id="fLarge"><span>◆ 仅大额</span></label>
+    <label class="pill-toggle"><input type="checkbox" id="fRecurring"><span>↻ 仅重复性</span></label>
+    <label class="search-label">🔍 <input type="search" id="fSearch" placeholder="搜索商户 / 备注 / 分类"></label>
+  </div>
+  <div class="filter-row active-filters">
+    <span class="row-label">状态</span>
+    <span id="activeChips" class="chips"></span>
+    <span class="muted" id="matchCount"></span>
+    <button class="btn btn-danger btn-clear" id="btnClear">✕ 清除全部筛选</button>
+  </div>
+</section>
+
+<!-- 空状态(置于主内容之前, 无需滚动即可见) -->
+<div class="empty-state" id="emptyState" hidden>
+  <div class="empty-art" aria-hidden="true">
+    <svg viewBox="0 0 64 64" width="64" height="64"><rect x="2" y="2" width="60" height="60" rx="19" fill="#EEF1FE"/><path d="M14 44 V29 a8 8 0 0 1 16 0 V44 M30 44 V29 a8 8 0 0 1 16 0 V44" stroke="#6675D9" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="51" cy="41" r="4.6" fill="#F2B04C"/></svg>
+  </div>
+  <h2 id="emptyTitle">没有数据</h2>
+  <p id="emptyDesc">当前筛选范围内没有交易记录。</p>
+  <div class="empty-actions">
+    <button class="btn" id="emptyClear">清除筛选</button>
+    <button class="btn btn-primary" id="emptyImport">导入数据文件</button>
+  </div>
+</div>
+
+<main id="main">
+  <!-- ============ 第一屏: 财务总览 ============ -->
+  <section class="panel" id="overview">
+    <div class="panel-head">
+      <h2>财务总览 <small class="muted" id="overviewRange"></small></h2>
+      <p class="panel-note">先看结论: 花了多少、收入是否覆盖支出、钱花在哪。</p>
+    </div>
+    <div class="kpi-grid" id="kpiGrid"></div>
+    <div class="summary-strip" id="summaryStrip" aria-live="polite"></div>
+    <div class="grid-3 overview-charts">
+      <div class="card">
+        <h3>收入 vs 支出 <small>按周期对比, 单位: 元</small></h3>
+        <p class="chart-note">柱越高花得越多; 深色线为净现金流(收入−支出), 低于 0 表示入不敷出。</p>
+        <div class="chart" id="chartIncomeExpense"></div>
+      </div>
+      <div class="card">
+        <h3>支出分类排行 <small>Top 10, 单位: 元</small></h3>
+        <p class="chart-note">横向条形便于比较长短; 点击条形可下钻到该分类的商户与交易。</p>
+        <div class="chart" id="chartCatRank"></div>
+      </div>
+      <div class="card">
+        <h3>最大支出 <small>当前范围内 Top 8 单笔</small></h3>
+        <p class="chart-note">大额支出(≥3,000 元)带 ◆ 标记; 点击查看交易详情。</p>
+        <ul class="top-expense-list" id="topExpenseList"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 第二部分: 支出分类分析 ============ -->
+  <section class="panel" id="category">
+    <div class="panel-head">
+      <h2>支出分类分析</h2>
+      <p class="panel-note">哪类花得最多、占比多少、比上期涨没涨、花给了谁。</p>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>分类金额排行 <small>横向条形, 单位: 元</small></h3>
+        <p class="chart-note">点击任意条形 → 下方出现该分类的商户明细与交易列表。</p>
+        <div class="chart chart-tall" id="chartCatBar"></div>
+      </div>
+      <div class="card">
+        <h3>分类占比 <small>占当前范围总支出; 合计 ≈100%(四舍五入)</small></h3>
+        <p class="chart-note">饼图仅看比例, 精确数值以左侧条形和下方表格为准。</p>
+        <div class="chart chart-tall" id="chartCatDonut"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>分类明细表 <small>金额 / 占比 / 环比 / 次数 / 平均单笔 / 标记</small></h3>
+      <p class="chart-note">「重复」= 同口径消费跨≥4个月或订阅类; 「大额」= 含 ≥3,000 元单笔。点击行下钻。</p>
+      <div class="table-wrap"><table class="data-table" id="catTable"></table></div>
+    </div>
+    <div class="card drill-panel" id="drillPanel" hidden>
+      <h3 id="drillTitle"></h3>
+      <div class="drill-grid">
+        <div><h4>Top 商户</h4><ul class="merchant-list" id="drillMerchants"></ul></div>
+        <div id="drillSubWrap">
+          <h4>子品类消费明细 <small class="muted">按最细子类聚合, 点击可过滤下方交易</small></h4>
+          <div class="table-wrap"><table class="data-table" id="drillSubTable"></table></div>
+        </div>
+      </div>
+      <h4 id="drillTxTitle">该分类交易(按金额降序, 前 20)</h4>
+      <div class="table-wrap"><table class="data-table" id="drillTxTable"></table></div>
+      <button class="btn" id="drillClose">关闭下钻</button>
+    </div>
+  </section>
+
+  <!-- ============ 第三部分: 时间趋势分析 ============ -->
+  <section class="panel" id="trend">
+    <div class="panel-head">
+      <h2>时间趋势分析</h2>
+      <p class="panel-note">消费趋势在变好还是变差; 大额支出发生在什么时候。悬浮可查看具体日期与金额。</p>
+    </div>
+    <div class="card">
+      <h3>收入 / 支出 / 净现金流趋势 <small id="trendUnitNote">按月, 单位: 元</small></h3>
+      <p class="chart-note">绿柱收入、玫红柱支出、深色线净现金流; ◆ 为大额支出发生点。点击柱子可把时间范围缩到该周期。</p>
+      <div class="chart" id="chartTrend"></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>累计收入与累计支出 <small>单位: 元</small></h3>
+        <p class="chart-note">两线间距 = 累计结余; 支出线变陡说明花得变快。</p>
+        <div class="chart" id="chartCumulative"></div>
+      </div>
+      <div class="card">
+        <h3>日历热力图 <small id="calYearNote"></small></h3>
+        <p class="chart-note">颜色越深当天支出越多; 悬浮看具体金额, 点击某天可筛选当日交易。</p>
+        <div class="chart" id="chartCalendar"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 第四部分: 星辰分布图 ============ -->
+  <section class="panel" id="starfield">
+    <div class="panel-head">
+      <h2>星辰分布图 <small class="muted">探索性视图 · 不替代第一屏结论</small></h2>
+      <p class="panel-note">每颗星 = 一笔交易: 横轴日期、纵轴分类、大小金额、形状类型。点击星星看明细。</p>
+    </div>
+    <div class="card">
+      <div class="star-toolbar">
+        <div class="mode-toggle" role="group" aria-label="视图模式">
+          <button class="chip-btn" id="starModeChart">✦ 星图模式</button>
+          <button class="chip-btn" id="starModeTable">☰ 表格模式(无障碍/低性能备用)</button>
+        </div>
+        <label class="select-label">聚合
+          <select id="starAgg">
+            <option value="auto" selected>自动(数据量大时按日聚合)</option>
+            <option value="none">不聚合</option>
+            <option value="day">按日聚合</option>
+          </select>
+        </label>
+        <span class="legend">
+          <span><i class="lg circle exp"></i>支出</span>
+          <span><i class="lg tri inc"></i>收入</span>
+          <span><i class="lg diamond ref"></i>退款</span>
+          <span><i class="lg rect tra"></i>转账</span>
+          <span class="muted">◆ 黑边 = 大额</span>
+        </span>
+      </div>
+      <p class="chart-note" id="starNote"></p>
+      <div class="chart chart-tall" id="chartStar"></div>
+      <div class="table-wrap" id="starTableWrap" hidden><table class="data-table" id="starTable"></table></div>
+    </div>
+  </section>
+
+  <!-- ============ 第五部分: 交易明细 ============ -->
+  <section class="panel" id="transactions">
+    <div class="panel-head">
+      <h2>交易明细</h2>
+      <p class="panel-note">当前筛选范围内的全部交易; 点击行查看详情, 可编辑或标记重点交易。</p>
+    </div>
+    <div class="card">
+      <div class="tx-toolbar">
+        <span class="muted" id="txCount"></span>
+        <label>排序
+          <select id="txSort">
+            <option value="date_desc">日期 ↓ 最新在前</option>
+            <option value="date_asc">日期 ↑ 最早在前</option>
+            <option value="amount_desc">金额 ↓ 最大在前</option>
+            <option value="amount_asc">金额 ↑ 最小在前</option>
+          </select>
+        </label>
+        <label>每页
+          <select id="txPageSize"><option>25</option><option selected>50</option><option>100</option></select>
+        </label>
+      </div>
+      <div class="table-wrap"><table class="data-table" id="txTable"></table></div>
+      <div class="pagination" id="txPager"></div>
+    </div>
+  </section>
+
+  <!-- ============ 数据质量 ============ -->
+  <section class="panel" id="quality">
+    <div class="panel-head">
+      <h2>数据质量与异常记录</h2>
+      <p class="panel-note">校验未通过或被标记的记录在此公示, 异常记录不参与任何指标计算, 不会被静默删除。</p>
+    </div>
+    <div class="card">
+      <div id="qualitySummary"></div>
+      <div class="table-wrap"><table class="data-table" id="qualityTable"></table></div>
+    </div>
+  </section>
+</main>
+
+<!-- 交易详情/编辑弹窗 -->
+<div class="modal-mask" id="txModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="txModalTitle">
+    <h3 id="txModalTitle">交易详情</h3>
+    <div id="txModalBody"></div>
+    <div id="txEditForm" hidden>
+      <div class="cfg-grid">
+        <label>金额(元) <input type="number" id="editAmount" min="0" step="0.01"></label>
+        <label>分类(可选已有或输入新类)
+          <input type="text" id="editCategory" list="categoryList">
+          <datalist id="categoryList"></datalist>
+        </label>
+      </div>
+      <label class="edit-note-label">备注 <textarea id="editNote" rows="2"></textarea></label>
+      <p class="muted">修改只保存在本浏览器, 原始 CSV 值保留可随时还原; 导出 CSV 采用修改后的值。</p>
+      <div class="modal-actions">
+        <button class="btn btn-primary" id="txEditSave">✔ 保存修改</button>
+        <button class="btn" id="txEditCancel">取消</button>
+      </div>
+    </div>
+    <div class="modal-actions" id="txViewActions">
+      <button class="btn" id="txModalEdit">✎ 编辑</button>
+      <button class="btn" id="txModalRevert" hidden>↺ 还原原始值</button>
+      <button class="btn" id="txModalFlag">☆ 标记此交易</button>
+      <button class="btn" id="txModalClose">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 设置弹窗 -->
+<div class="modal-mask" id="cfgModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3>显示设置</h3>
+    <div class="cfg-grid">
+      <label>货币符号
+        <select id="cfgCurrency"><option value="CNY">¥ 人民币 (CNY)</option><option value="USD">$ 美元符号 (USD)</option><option value="EUR">€ 欧元符号 (EUR)</option></select>
+      </label>
+      <label>金额格式
+        <select id="cfgLocale"><option value="zh-CN">1,234,567.89(千分位)</option><option value="de-DE">1.234.567,89(欧式)</option></select>
+      </label>
+      <label>日期格式
+        <select id="cfgDateFmt"><option value="iso">2026-08-25</option><option value="cn">2026年8月25日</option><option value="slash">2026/08/25</option></select>
+      </label>
+      <label>时区
+        <select id="cfgTz"><option value="Asia/Shanghai">Asia/Shanghai (UTC+8)</option></select>
+      </label>
+    </div>
+    <p class="muted">设置保存在本浏览器 localStorage; 仅影响展示格式, 不影响计算。界面语言当前为中文(语言包结构见 README)。</p>
+    <div class="modal-actions"><button class="btn btn-primary" id="cfgClose">保存并关闭</button></div>
+  </div>
+</div>
+
+<footer class="footer">
+  <p>计算规则: 净支出 = 支出 − 退款; 净现金流 = 收入 − 净支出; 转账不计入收支。所有聚合均可追溯到「交易明细」中的原始记录。</p>
+  <p id="footerMeta"></p>
+</footer>
+
+<script src="js/vendor/echarts.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/aggregate.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

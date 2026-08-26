@@ -1,0 +1,9 @@
+{
+  "meta": { "source_file": "import_test.json", "generated_at": "2026-08-25 23:00:00", "type_mapping": { "note": "导入测试夹具" } },
+  "quality": { "total_rows": 3, "issues": [], "issue_count": 0 },
+  "transactions": [
+    { "id": "X0001", "date": "2026-08-01 09:00:00", "type": "income", "amount": 10000, "category": "工资", "subcategory": "", "merchant": "测试公司", "account": "总财产", "payment_method": "银行卡", "note": "八月工资", "tags": [], "recurring": true, "currency": "CNY", "large": false },
+    { "id": "X0002", "date": "2026-08-02 12:00:00", "type": "expense", "amount": 3000, "category": "住房", "subcategory": "房租", "merchant": "房东", "account": "总财产", "payment_method": "微信支付", "note": "八月房租", "tags": [], "recurring": true, "currency": "CNY", "large": true },
+    { "id": "X0003", "date": "2026-08-03 18:30:00", "type": "expense", "amount": 58.5, "category": "餐饮美食", "subcategory": "", "merchant": "测试餐厅", "account": "总财产", "payment_method": "支付宝", "note": "晚餐", "tags": ["聚餐"], "recurring": false, "currency": "CNY", "large": false }
+  ]
+}

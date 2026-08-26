@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- monely. 品牌标: Q弹小写 m + 句号金币 -->
+  <rect x="2" y="2" width="60" height="60" rx="19" fill="#6675D9"/>
+  <path d="M14 44 V29 a8 8 0 0 1 16 0 V44 M30 44 V29 a8 8 0 0 1 16 0 V44"
+        stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="51" cy="41" r="4.6" fill="#F2B04C"/>
+</svg>
